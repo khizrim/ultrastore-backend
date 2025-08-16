@@ -266,7 +266,6 @@ main() {
     echo -e "${BLUE}🌐 Domain: ${WP_DOMAIN}${NC}"
     echo -e "${BLUE}📧 Email: ${STORE_EMAIL}${NC}"
     echo -e "${BLUE}📝 WordPress Admin: ${PROTOCOL}://${WP_URL}/wp-admin${NC}"
-    echo -e "${BLUE}👤 Credentials: ${WP_ADMIN_USER:-admin} / ${WP_ADMIN_PASS:-admin}${NC}"
     echo -e "${BLUE}🔌 REST API: ${PROTOCOL}://${WP_URL}/wp-json/${NC}"
     echo -e "${BLUE}🛒 WooCommerce API: ${PROTOCOL}://${WP_URL}/wp-json/wc/v3/${NC}"
     echo ""
