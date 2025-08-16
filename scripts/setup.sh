@@ -174,55 +174,10 @@ install_woocommerce() {
     log_success "WooCommerce translations updated"
 }
 
-configure_woocommerce() {
-    log_info "Configuring WooCommerce with Ultrastore data..."
-    
-    # Store information
-    $WP_CLI option update woocommerce_store_address "Лиговский проспект, 73" --allow-root
-    $WP_CLI option update woocommerce_store_address_2 "офис 506, 5 этаж" --allow-root
-    $WP_CLI option update woocommerce_store_city "Санкт-Петербург" --allow-root
-    $WP_CLI option update woocommerce_default_country "RU:SPE" --allow-root
-    $WP_CLI option update woocommerce_store_postcode "191040" --allow-root
-    $WP_CLI option update woocommerce_currency "RUB" --allow-root
-    
-    # Store settings
-    $WP_CLI option update woocommerce_product_type "both" --allow-root
-    $WP_CLI option update woocommerce_allow_tracking "no" --allow-root
-    $WP_CLI option update woocommerce_weight_unit "kg" --allow-root
-    $WP_CLI option update woocommerce_dimension_unit "cm" --allow-root
-    
-    # Pricing settings
-    $WP_CLI option update woocommerce_price_thousand_sep " " --allow-root
-    $WP_CLI option update woocommerce_price_decimal_sep "," --allow-root
-    $WP_CLI option update woocommerce_price_num_decimals "0" --allow-root
-    $WP_CLI option update woocommerce_currency_pos "right_space" --allow-root
-    
-    # Tax settings (Russian VAT)
-    $WP_CLI option update woocommerce_calc_taxes "yes" --allow-root
-    $WP_CLI option update woocommerce_prices_include_tax "yes" --allow-root
-    $WP_CLI option update woocommerce_tax_display_shop "incl" --allow-root
-    $WP_CLI option update woocommerce_tax_display_cart "incl" --allow-root
-    
-    # Enable REST API
-    $WP_CLI option update woocommerce_api_enabled "yes" --allow-root
-    
-    # Set up basic pages
-    $WP_CLI wc tool run install_pages --user=1 --allow-root 2>/dev/null || true
-    
-    # Skip WooCommerce setup wizard
-    $WP_CLI option update woocommerce_onboarding_opt_in "no" --allow-root
-    $WP_CLI option update woocommerce_setup_wizard_completed "yes" --allow-root
-    
-    # Create Russian VAT tax rate
-    $WP_CLI wc tax create \
-        --country="RU" \
-        --rate="20" \
-        --name="НДС" \
-        --class="standard" \
-        --user=1 \
-        --allow-root 2>/dev/null || true
-    
-    log_success "WooCommerce configured for Russian market"
+update_wordpress_core() {
+    log_info "Updating WordPress core..."
+    $WP_CLI core update --allow-root 2>/dev/null || log_warning "WordPress core update failed"
+    log_success "WordPress core updated"
 }
 
 update_translations() {
@@ -270,181 +225,11 @@ configure_wordpress_for_headless() {
     # Disable comments by default
     $WP_CLI option update default_comment_status "closed" --allow-root
     $WP_CLI option update default_ping_status "closed" --allow-root
+
+    # Hide from indexing
+    $WP_CLI option update blog_public 0 --allow-root
     
     log_success "WordPress configured for headless use with Russian localization"
-}
-
-create_sample_content() {
-    log_info "Creating Apple product categories and sample products..."
-    
-    # Create product categories
-    log_info "Creating product categories..."
-    
-    # Create main Apple categories
-    $WP_CLI wc product_cat create \
-        --name="iPhone" \
-        --description="Смартфоны Apple iPhone" \
-        --user=1 \
-        --allow-root 2>/dev/null || true
-    
-    $WP_CLI wc product_cat create \
-        --name="MacBook" \
-        --description="Ноутбуки Apple MacBook" \
-        --user=1 \
-        --allow-root 2>/dev/null || true
-    
-    $WP_CLI wc product_cat create \
-        --name="iPad" \
-        --description="Планшеты Apple iPad" \
-        --user=1 \
-        --allow-root 2>/dev/null || true
-    
-    $WP_CLI wc product_cat create \
-        --name="Apple Watch" \
-        --description="Умные часы Apple Watch" \
-        --user=1 \
-        --allow-root 2>/dev/null || true
-    
-    $WP_CLI wc product_cat create \
-        --name="AirPods" \
-        --description="Беспроводные наушники Apple AirPods" \
-        --user=1 \
-        --allow-root 2>/dev/null || true
-    
-    $WP_CLI wc product_cat create \
-        --name="Аксессуары" \
-        --description="Аксессуары для устройств Apple" \
-        --user=1 \
-        --allow-root 2>/dev/null || true
-    
-    # Create product attributes
-    log_info "Creating product attributes..."
-    
-    $WP_CLI wc product_attribute create \
-        --name="Цвет" \
-        --slug="color" \
-        --type="select" \
-        --order_by="menu_order" \
-        --has_archives=true \
-        --user=1 \
-        --allow-root 2>/dev/null || true
-    
-    $WP_CLI wc product_attribute create \
-        --name="Память" \
-        --slug="storage" \
-        --type="select" \
-        --order_by="menu_order" \
-        --has_archives=true \
-        --user=1 \
-        --allow-root 2>/dev/null || true
-    
-    # Check if products already exist
-    local product_count
-    product_count=$($WP_CLI post list --post_type=product --format=count --allow-root)
-    
-    if [ "$product_count" -eq 0 ]; then
-        log_info "Creating sample Apple products..."
-        
-        # iPhone 15 Pro
-        $WP_CLI wc product create \
-            --name="iPhone 15 Pro 128GB" \
-            --type="simple" \
-            --regular_price="129990" \
-            --sku="IPHONE15PRO128" \
-            --description="iPhone 15 Pro с титановым дизайном, чипом A17 Pro и усовершенствованной камерной системой Pro. Доступен в четырех великолепных цветах." \
-            --short_description="Новый iPhone 15 Pro с титановым корпусом и чипом A17 Pro" \
-            --categories="[{\"id\": 1}]" \
-            --status="publish" \
-            --manage_stock=true \
-            --stock_quantity=10 \
-            --weight="0.187" \
-            --user=1 \
-            --allow-root >/dev/null
-        
-        # MacBook Air M3
-        $WP_CLI wc product create \
-            --name="MacBook Air 13\" M3 256GB" \
-            --type="simple" \
-            --regular_price="144990" \
-            --sku="MACBOOKAIR13M3256" \
-            --description="MacBook Air 13\" с чипом M3 обеспечивает исключительную производительность и до 18 часов автономной работы." \
-            --short_description="Ультратонкий MacBook Air с чипом M3" \
-            --categories="[{\"id\": 2}]" \
-            --status="publish" \
-            --manage_stock=true \
-            --stock_quantity=5 \
-            --weight="1.24" \
-            --user=1 \
-            --allow-root >/dev/null
-        
-        # iPad Pro 11"
-        $WP_CLI wc product create \
-            --name="iPad Pro 11\" M4 128GB Wi-Fi" \
-            --type="simple" \
-            --regular_price="94990" \
-            --sku="IPADPRO11M4128" \
-            --description="iPad Pro 11\" с чипом M4, дисплеем Ultra Retina XDR и поддержкой Apple Pencil Pro." \
-            --short_description="Мощный iPad Pro с чипом M4" \
-            --categories="[{\"id\": 3}]" \
-            --status="publish" \
-            --manage_stock=true \
-            --stock_quantity=8 \
-            --weight="0.444" \
-            --user=1 \
-            --allow-root >/dev/null
-        
-        # Apple Watch Series 9
-        $WP_CLI wc product create \
-            --name="Apple Watch Series 9 GPS 41mm" \
-            --type="simple" \
-            --regular_price="44990" \
-            --sku="WATCHS9GPS41" \
-            --description="Apple Watch Series 9 с чипом S9, ярким дисплеем и новыми возможностями для здоровья." \
-            --short_description="Умные часы Apple Watch Series 9" \
-            --categories="[{\"id\": 4}]" \
-            --status="publish" \
-            --manage_stock=true \
-            --stock_quantity=15 \
-            --weight="0.032" \
-            --user=1 \
-            --allow-root >/dev/null
-        
-        # AirPods Pro 2
-        $WP_CLI wc product create \
-            --name="AirPods Pro (2-го поколения)" \
-            --type="simple" \
-            --regular_price="24990" \
-            --sku="AIRPODSPRO2" \
-            --description="AirPods Pro с активным шумоподавлением нового уровня, Пространственным аудио и зарядным футляром MagSafe." \
-            --short_description="Беспроводные наушники с активным шумоподавлением" \
-            --categories="[{\"id\": 5}]" \
-            --status="publish" \
-            --manage_stock=true \
-            --stock_quantity=20 \
-            --weight="0.061" \
-            --user=1 \
-            --allow-root >/dev/null
-        
-        # Magic Keyboard
-        $WP_CLI wc product create \
-            --name="Magic Keyboard для iPad Pro 11\"" \
-            --type="simple" \
-            --regular_price="34990" \
-            --sku="MAGICKEYBOARD11" \
-            --description="Magic Keyboard с трекпадом превращает iPad Pro в универсальное устройство для работы." \
-            --short_description="Клавиатура с трекпадом для iPad Pro" \
-            --categories="[{\"id\": 6}]" \
-            --status="publish" \
-            --manage_stock=true \
-            --stock_quantity=12 \
-            --weight="0.601" \
-            --user=1 \
-            --allow-root >/dev/null
-        
-        log_success "Created sample Apple products"
-    else
-        log_success "Products already exist, skipping sample creation"
-    fi
 }
 
 main() {
@@ -465,10 +250,8 @@ main() {
     setup_ultrastore_theme
     remove_default_plugins
     install_woocommerce
-    configure_woocommerce
     configure_wordpress_for_headless
     update_translations
-    create_sample_content
     
     # Get final configuration for output
     WP_DOMAIN="${WP_DOMAIN:-localhost}"
@@ -479,16 +262,13 @@ main() {
     
     echo ""
     echo -e "${GREEN}🎉 ${WP_TITLE} setup completed successfully!${NC}"
-    echo -e "${BLUE}🛍️  Store: ${WP_TITLE} - Магазин техники Apple в Санкт-Петербурге${NC}"
+    echo -e "${BLUE}🛍️  Store: ${WP_TITLE}${NC}"
     echo -e "${BLUE}🌐 Domain: ${WP_DOMAIN}${NC}"
-    echo -e "${BLUE}📍 Address: Лиговский проспект, 73, офис 506, 5 этаж, СПб 191040${NC}"
     echo -e "${BLUE}📧 Email: ${STORE_EMAIL}${NC}"
     echo -e "${BLUE}📝 WordPress Admin: ${PROTOCOL}://${WP_URL}/wp-admin${NC}"
     echo -e "${BLUE}👤 Credentials: ${WP_ADMIN_USER:-admin} / ${WP_ADMIN_PASS:-admin}${NC}"
     echo -e "${BLUE}🔌 REST API: ${PROTOCOL}://${WP_URL}/wp-json/${NC}"
     echo -e "${BLUE}🛒 WooCommerce API: ${PROTOCOL}://${WP_URL}/wp-json/wc/v3/${NC}"
-    echo -e "${BLUE}💰 Currency: Russian Ruble (RUB)${NC}"
-    echo -e "${BLUE}📦 Sample Products: iPhone, MacBook, iPad, Apple Watch, AirPods${NC}"
     echo ""
 }
 
