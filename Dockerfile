@@ -22,5 +22,9 @@ ENV WP_CLI_ALLOW_ROOT=1
 
 # WP-CLI будет создавать wp-config.php автоматически
 
+# Копируем скрипт инициализации
+COPY scripts/init-wordpress.sh /scripts/init-wordpress.sh
+RUN chmod +x /scripts/init-wordpress.sh
+
 # Устанавливаем права доступа
 RUN chown -R www-data:www-data /var/www/html

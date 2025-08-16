@@ -1,31 +1,37 @@
 # Environment files
-.env*
-!.env.example
-.DS_Store
+.env
+.env.local
+.env.production
 
-# IDE and editor folders
+# WordPress core files
+wordpress_data/
+uploads/
+plugins/*
+!plugins/.gitkeep
+
+# Database
+mysql_data/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
 .vscode/
 .idea/
-.cursor/
+*.swp
+*.swo
 
-# LLM Ignore Files
-.cursorignore
-.aiignore
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Application data and temp files
-data/
-temp/
-
-# Dependency directories
+# Dependencies
 node_modules/
 vendor/
 
-# Uploads and plugins
-uploads/
-plugins/
-
-# Exported archives
-export/*.{tgz,zip,tar,gz}
-
-# Theme files
-themes/twentytwenty*
+# Build files
+dist/
+build/

@@ -1,38 +1,48 @@
+version: '3.8'
+
 services:
   mysql:
     image: mariadb:11.1.2
     container_name: ultrastore-mysql
     restart: unless-stopped
+    env_file: .env
     environment:
-      MYSQL_DATABASE: wordpress
-      MYSQL_USER: wordpress
-      MYSQL_PASSWORD: wordpress_password
-      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     volumes:
       - mysql_data:/var/lib/mysql
     ports:
       - "3306:3306"
     networks:
       - ultrastore-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
 
   wordpress:
     build: .
     container_name: ultrastore-wordpress
     restart: unless-stopped
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
+    env_file: .env
     environment:
-      WORDPRESS_DB_HOST: mysql:3306
-      WORDPRESS_DB_USER: wordpress
-      WORDPRESS_DB_PASSWORD: wordpress_password
-      WORDPRESS_DB_NAME: wordpress
-      WORDPRESS_TABLE_PREFIX: wp_
-      WORDPRESS_DEBUG: 1
+      WORDPRESS_DB_HOST: ${WORDPRESS_DB_HOST}
+      WORDPRESS_DB_USER: ${WORDPRESS_DB_USER}
+      WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD}
+      WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME}
+      WORDPRESS_TABLE_PREFIX: ${WORDPRESS_TABLE_PREFIX}
+      WORDPRESS_DEBUG: ${WORDPRESS_DEBUG}
     volumes:
       - wordpress_data:/var/www/html
       - ./plugins:/var/www/html/wp-content/plugins
       - ./themes:/var/www/html/wp-content/themes
       - ./uploads:/var/www/html/wp-content/uploads
+      - ./scripts:/scripts
     ports:
       - "8080:80"
     networks:
