@@ -1,0 +1,106 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: 🔐 Backup database on server (only if exists)
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            if docker ps -a --format '{{.Names}}' | grep -q '^ultrastore-mysql$$'; then
+              echo "📦 Found existing database container, creating backup..."
+              cd /root/ultrastore
+              mkdir -p export
+              # Create database backup with timestamp
+              BACKUP_FILE="export/backup-$(date +%Y%m%d-%H%M%S).sql"
+              docker-compose exec -T mysql mysqldump -u root -proot_password wordpress > "$BACKUP_FILE" || true
+              echo "✅ Database backup created: $BACKUP_FILE"
+            else
+              echo "ℹ️  No existing database container found — skipping backup."
+            fi
+
+      - name: 📤 Copy files to server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          source: "."
+          target: "/root/ultrastore"
+          overwrite: true
+          strip_components: 1
+
+      - name: 🚀 Deploy and setup on server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd /root/ultrastore
+            
+            # Check if WordPress is already running and configured
+            WORDPRESS_INSTALLED=false
+            
+            if docker-compose ps | grep -q "ultrastore-wordpress.*Up"; then
+              echo "✅ WordPress container is running, checking if WordPress is installed..."
+              if docker-compose exec -T wordpress wp core is-installed --allow-root 2>/dev/null; then
+                echo "✅ WordPress is already installed and configured"
+                WORDPRESS_INSTALLED=true
+              else
+                echo "⚠️  WordPress container is running but WordPress is not installed"
+              fi
+            else
+              echo "ℹ️  WordPress container is not running"
+            fi
+            
+            # Stop existing containers (if any)
+            echo "🔄 Stopping existing containers..."
+            docker-compose down || true
+            
+            # Start containers
+            echo "🚀 Starting containers..."
+            docker-compose up -d
+            
+            # Wait for containers to be ready
+            echo "⏳ Waiting for containers to start..."
+            sleep 30
+            
+            # Run setup script if WordPress was not installed
+            if [ "$WORDPRESS_INSTALLED" = false ]; then
+              echo "🛠️  Running first-time setup..."
+              chmod +x scripts/setup.sh
+              ./scripts/setup.sh
+              echo "✅ First-time setup completed!"
+            else
+              echo "ℹ️  WordPress already configured, skipping setup"
+              echo "🔄 Checking for updates..."
+              
+              # Update translations if WordPress is already installed
+              docker-compose exec -T wordpress wp language core update --allow-root 2>/dev/null || true
+              docker-compose exec -T wordpress wp language plugin update --all --allow-root 2>/dev/null || true
+              
+              echo "✅ Deployment completed!"
+            fi
+            
+            # Show final status
+            echo ""
+            echo "🎉 Deployment Summary:"
+            echo "📍 WordPress Admin: https://${{ secrets.SSH_HOST }}/wp-admin"
+            echo "🔌 API Endpoint: https://${{ secrets.SSH_HOST }}/wp-json/wc/v3/"
+            echo "🐳 Container Status:"
+            docker-compose ps

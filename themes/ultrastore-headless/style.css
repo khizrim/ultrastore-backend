@@ -1,0 +1,14 @@
+/*
+Theme Name: Ultrastore Headless
+Theme URI: https://example.com/
+Author: Ultrastore
+Author URI: https://example.com/
+Description: Empty theme for headless WordPress (no UI). Used to expose data via REST API.
+Version: 0.1.0
+Requires at least: 6.0
+Tested up to: 6.5
+Requires PHP: 8.1
+Text Domain: ultrastore-headless
+*/
+
+/* Intentionally left blank for headless setup */

@@ -1,0 +1,47 @@
+services:
+  mysql:
+    image: mariadb:11.1.2
+    container_name: ultrastore-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress_password
+      MYSQL_ROOT_PASSWORD: root_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - ultrastore-network
+
+  wordpress:
+    build: .
+    container_name: ultrastore-wordpress
+    restart: unless-stopped
+    depends_on:
+      - mysql
+    environment:
+      WORDPRESS_DB_HOST: mysql:3306
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress_password
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_TABLE_PREFIX: wp_
+      WORDPRESS_DEBUG: 1
+    volumes:
+      - wordpress_data:/var/www/html
+      - ./plugins:/var/www/html/wp-content/plugins
+      - ./themes:/var/www/html/wp-content/themes
+      - ./uploads:/var/www/html/wp-content/uploads
+    ports:
+      - "8080:80"
+    networks:
+      - ultrastore-network
+
+volumes:
+  mysql_data:
+  wordpress_data:
+
+networks:
+  ultrastore-network:
+    driver: bridge
