@@ -86,3 +86,25 @@ add_action('init', function () {
     }
   });
 });
+
+// ==== Frontend URL Configuration ====
+add_action('init', function () {
+  // Determine frontend URL based on environment
+  $frontend_url = '';
+  
+  // Check if we're in production (based on site URL)
+  $site_url = get_site_url();
+  if (strpos($site_url, 'wp.ultrastore.khizrim.online') !== false) {
+    // Production frontend
+    $frontend_url = 'https://ultrastore.khizrim.online';
+  } else {
+    // Local development frontend
+    $frontend_url = 'http://localhost:3000';
+  }
+  
+  // Make frontend URL available globally
+  if (!defined('FRONTEND_URL')) {
+    define('FRONTEND_URL', $frontend_url);
+  }
+});
+
